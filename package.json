@@ -1,5 +1,5 @@
 {
-  "name": "globo-api-challenge",
+  "name": "globo-scrape-challenge",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {

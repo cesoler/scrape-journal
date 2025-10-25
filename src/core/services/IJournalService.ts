@@ -1,5 +1,5 @@
-import { ArticleDTO } from "../models/JournalModel";
+import { ArticleDTO, AvailableJournalTypes } from "../models/JournalModel";
 
 export interface IJournalService {
-    scrapeJournals(type: 'jornalismo' | 'entretenimento' | 'esportes'): Promise<ArticleDTO[]>;
+    scrapeJournals(type: AvailableJournalTypes): Promise<ArticleDTO[]>;
 }
