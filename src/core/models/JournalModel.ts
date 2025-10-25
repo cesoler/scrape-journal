@@ -4,7 +4,7 @@ export interface ArticleDTO {
     subtitle: string;
     url: string;
     featured: boolean;
-    createdAt: Date;
+    createdAt: string;
 }
 
-export type AvailableJournalTypes = 'jornalismo' | 'entretenimento' | 'esportes';
+export type AvailableColumnCategory = 'jornalismo' | 'entretenimento' | 'esportes';
