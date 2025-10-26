@@ -9,21 +9,16 @@ class BrowserService implements IBrowserService {
     return this.browser;
   }
 
-  public async startPage(url: string): Promise<Page> {
-    if (!this.browser) {
-      await this.startBrowser();
-    }
-    const mainPage = await this.browser!.newPage();
-    await mainPage.goto(url, { waitUntil: 'networkidle2' });
-    return mainPage;
-  }
-
+  
   public async closeBrowser(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
     }
   }
+  
+  public getBrowserInstance(): Browser | null {
+    return this.browser;
+  }
 }
-
 export const browserService = new BrowserService();

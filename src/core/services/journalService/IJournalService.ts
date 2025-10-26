@@ -1,5 +1,5 @@
-import { ArticleDTO, AvailableColumnCategory } from "../../models/JournalModel";
+import { CompleteArticleDTO, AvailableColumnCategory } from "../../models/JournalModel";
 
 export interface IJournalService {
-    scrapeJournalColumn(columnCategory: AvailableColumnCategory): Promise<ArticleDTO[]>;
+    scrapeJournalColumn(columnCategory: AvailableColumnCategory): Promise<CompleteArticleDTO[]>;
 }

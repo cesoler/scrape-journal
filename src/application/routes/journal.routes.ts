@@ -4,6 +4,6 @@ import { journalController } from '../controllers/JournalismController';
 
 const journalRoutes = Router();
 
-journalRoutes.get(JournalRoutes.SCRAPE_JOURNALISM, (req: Request, res: Response) => journalController.scrapeJournal(req, res, 'jornalismo'));
+journalRoutes.get(JournalRoutes.SCRAPE, (req: Request, res: Response) => journalController.scrapeJournal(req, res));
 
 export { journalRoutes };
