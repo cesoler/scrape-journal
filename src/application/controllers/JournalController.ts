@@ -16,14 +16,14 @@ class JournalController {
         });
       }
       try {
-        const articles: CompleteArticleDTO[] = await this.service.scrapeJournalColumn(column);
+        const articles = await this.service.scrapeJournalColumn(column);
         return res.status(200).json(articles);
       } catch (error) {
         return res.status(500).json({ error: 'An internal error occurred: ' + error });
       }
     }
 
-    public async getAISuggestions(req: Request, res: Response): Promise<Response> {
+    public async getAISuggestions(req: Request, res: Response): Promise<Response<CompleteArticleDTO[]>> {
       const column = req.query.category as string;
       const itemsPerPage = parseInt(req.query.itemsPerPage as string) || 4;
 

@@ -16,7 +16,7 @@ class JournalService implements IJournalService {
         const selectorsBrowser = getSelectorsForBrowser(columnCategory);
 
         const articleList = await this.articleService.scrapeArticleList(browser, 'https://globo.com', selectorsBrowser['mainPage']);
-        const processedList = await this.articleService.scrapeDetailsForList(
+        const processedList = await this.articleService.scrapeDetailsForListSync(
             browser,
             articleList,
             selectorsBrowser['articlePage'],
@@ -42,7 +42,7 @@ class JournalService implements IJournalService {
     
         const selectors = getSelectorsForBrowser(columnCategory)['articlePage'];
 
-        const processedList = await this.articleService.scrapeDetailsForList(
+        const processedList = await this.articleService.scrapeDetailsForListSync(
             browser,
             aiSuggestions,
             selectors,

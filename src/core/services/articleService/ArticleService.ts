@@ -4,8 +4,9 @@ import { AiArticleSuggestionDTO, AvailableColumnCategory, CompleteArticleDTO, De
 import { IPageService } from "../pageService/IPageService";
 import { pageService } from "../pageService/PageService";
 import { parseJsonToAiArticleSuggestionDTO } from "../../utils/Parser";
+import { IArticleService } from "./IArticleService";
 
-class ArticleService {
+class ArticleService implements IArticleService {
     constructor(private pageService: IPageService = pageService) {}
 
     async scrapeArticleList(browser: Browser, url: string, selectors: JournalSelector['mainPage']): Promise<MainArticleContentDTO[]> {
@@ -31,7 +32,7 @@ class ArticleService {
         return articleDetails;
     }
 
-    async scrapeDetailsForList<T>(
+    async scrapeDetailsForListAsync<T>(
         browser: Browser,
         baseList: T[],
         selectors: JournalSelector['articlePage'],
@@ -54,6 +55,32 @@ class ArticleService {
             }
             return { item, details: null };
         });
+    }
+
+    async scrapeDetailsForListSync<T>(
+        browser: Browser,
+        baseList: T[],
+        selectors: JournalSelector['articlePage'],
+        urlExtractor: (item: T) => string | null
+    ): Promise<({ item: T; details: DetailArticleContentDTO | null })[]> {
+        const results: ({ item: T; details: DetailArticleContentDTO | null })[] = [];
+
+        for (const item of baseList) {
+            const url = urlExtractor(item);
+            if (!url) {
+                results.push({ item, details: null });
+                continue;
+            }
+
+            try {
+                const details = await this.scrapeArticleDetails(browser, url, selectors);
+                results.push({ item, details });
+            } catch (err) {
+                results.push({ item, details: null });
+            }
+        }
+
+        return results;
     }
 
     async getAISuggestions(column: AvailableColumnCategory, itemsPerPage: number): Promise<AiArticleSuggestionDTO[]> {

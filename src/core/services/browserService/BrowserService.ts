@@ -5,7 +5,14 @@ class BrowserService implements IBrowserService {
   private browser: Browser | null = null;
 
   public async startBrowser(): Promise<Browser> {
-    this.browser = await puppeteer.launch({ headless: true });
+    this.browser = await puppeteer.launch(
+      {
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox'
+        ]
+      });
     return this.browser;
   }
 

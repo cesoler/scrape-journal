@@ -5,7 +5,14 @@ import { DetailArticleContentDTO, MainArticleContentDTO } from "../../models/Jou
 export interface IArticleService {
     scrapeArticleList(browser: Browser, url: string, selectors: JournalSelector['mainPage']): Promise<MainArticleContentDTO[]>;
     scrapeArticleDetails(browser: Browser, url: string, selectors: JournalSelector['articlePage']): Promise<DetailArticleContentDTO>;
-    scrapeDetailsForList<T>(
+    scrapeDetailsForListAsync<T>(
+        browser: Browser,
+        baseList: T[],
+        selectors: JournalSelector['articlePage'],
+        urlExtractor: (item: T) => string | null
+    ): Promise<({ item: T; details: DetailArticleContentDTO | null })[]>;
+
+    scrapeDetailsForListSync<T>(
         browser: Browser,
         baseList: T[],
         selectors: JournalSelector['articlePage'],
