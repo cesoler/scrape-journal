@@ -9,14 +9,13 @@ class BrowserService implements IBrowserService {
     return this.browser;
   }
 
-  
   public async closeBrowser(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
     }
   }
-  
+
   public getBrowserInstance(): Browser | null {
     return this.browser;
   }

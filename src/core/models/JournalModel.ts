@@ -13,9 +13,29 @@ export interface MainArticleContentDTO {
     featured: boolean;
 }
 
-export interface InsideArticleContentDTO {
+export interface DetailArticleContentDTO {
     subtitle: string;
     createdAt: string;
+}
+
+export interface AiArticleSuggestionDTO {
+  content: {
+    url: string;
+    image: {
+      url: string;
+    };
+    section: string;
+    video: string | null;
+    recommendationTitle: string;
+    category: string;
+    recommendationSummary: string;
+    title: string;
+    summary: string;
+  }
+  publication: string;
+  created: string;
+  tenantId: string;
+  type: string;
 }
 
 export type AvailableColumnCategory = 'jornalismo' | 'entretenimento' | 'esporte';
