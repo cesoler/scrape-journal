@@ -23,7 +23,7 @@ This command builds the image using the multi-stage `Dockerfile`.
 
 ```bash
 # Define a name and tag for the production image
-export IMAGE_NAME_PROD="challenge-api-prod:1.0.0"
+export IMAGE_NAME_PROD="webscrapping.azurecr.io/challenge-api:1.0.0"
 
 # (Optional) Clean up the previous image, if it exists
 docker rmi -f $IMAGE_NAME_PROD 2>/dev/null || true
