@@ -8,6 +8,7 @@ class JournalController {
 
     public async scrapeJournal(req: Request, res: Response): Promise<Response<CompleteArticleDTO[]>> {
       const column = req.query.category as string;
+      const synchronousApproach = req.query.sync as string;
 
       if (!isAvailableColumnCategory(column)) {
         return res.status(400).json({ 
@@ -16,7 +17,11 @@ class JournalController {
         });
       }
       try {
-        const articles = await this.service.scrapeJournalColumn(column);
+        if(synchronousApproach === 'async') {
+          const articles = await this.service.scrapeJournalColumnAsync(column);
+          return res.status(200).json(articles);
+        }
+        const articles = await this.service.scrapeJournalColumnSync(column);
         return res.status(200).json(articles);
       } catch (error) {
         return res.status(500).json({ error: 'An internal error occurred: ' + error });
@@ -35,7 +40,11 @@ class JournalController {
       }
 
       try {
-        const suggestions = await this.service.getAISuggestions(column, itemsPerPage);
+        if(itemsPerPage >= 10) {
+          const suggestions = await this.service.getAISuggestionsSync(column, itemsPerPage);
+          return res.status(200).json(suggestions);
+        }
+        const suggestions = await this.service.getAISuggestionsAsync(column, itemsPerPage);
         return res.status(200).json(suggestions);
       } catch (error) {
         return res.status(500).json({ error: 'An internal error occurred: ' + error });

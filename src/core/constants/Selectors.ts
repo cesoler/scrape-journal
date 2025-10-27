@@ -14,7 +14,7 @@ export interface JournalSelector {
     subtitleSelector: string;
     createdAtSelector: string;
   };
-}
+};
 
 export const getSelectorsForBrowser = (category: AvailableColumnCategory): JournalSelector => {
   return {
@@ -33,4 +33,3 @@ export const getSelectorsForBrowser = (category: AvailableColumnCategory): Journ
     }
   };
 };
-
