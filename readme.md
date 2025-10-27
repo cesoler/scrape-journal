@@ -54,7 +54,7 @@ This endpoint fetches a list of article recommendations from an internal API and
 | Parameter | Type | Description | Required | Default |
 | :--- | :--- | :--- | :--- | :--- |
 | `category` | string | Specifies the category for suggestions. Valid options: `jornalismo`, `esportes`, `entretenimento`. | **Yes** | |
-| `itemsPerPage`| number | The number of suggestions to retrieve. | No | 9 |
+| `itemsPerPage`| number | The number of suggestions to retrieve. | **Yes** | 9 |
 
 **🚨 Automatic Memory Protection:**
 To prevent OOM errors, this endpoint has a built-in safeguard: **if `itemsPerPage` is greater than 9, the service will automatically force `sync` (sequential) mode**, regardless of the `sync` parameter.
