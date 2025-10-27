@@ -16,9 +16,14 @@ class JournalService implements IJournalService {
         const selectorsBrowser = getSelectorsForBrowser(columnCategory);
 
         const articleList = await this.articleService.scrapeArticleList(browser, 'https://globo.com', selectorsBrowser['mainPage']);
+        const filteredList = articleList.filter(article => {
+            const url = article.url!.toLowerCase();
+            return !url.startsWith('https://g1.globo.com/previsao-do-tempo') && !url.startsWith('https://g1.globo.com/guia/guia-de-compras');
+        });
+        
         const processedList = await this.articleService.scrapeDetailsForListSync(
             browser,
-            articleList,
+            filteredList,
             selectorsBrowser['articlePage'],
             (article) => article.url
         );
