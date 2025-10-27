@@ -3,7 +3,7 @@ import { Browser, Page } from "puppeteer";
 export interface IPageService {
     startPage(browser: Browser, url: string): Promise<Page>;
     interceptRequests(page: Page): Promise<void>;
-    setupPage(browser: Browser, url: string, selector: string): Promise<Page>;
+    setupPage(browser: Browser, url: string, waitForSelector?: string): Promise<Page>;
 
     /*
     * Waits for a specific selector to appear on the page within the given timeout.
@@ -13,4 +13,5 @@ export interface IPageService {
     */
     waitForSelector(page: Page, selector: string, timeout?: number): Promise<void>;
     closePage(page: Page): Promise<void>;
+    pageGoto(page: Page, url: string, timeout?: number, waitForSelector?: string): Promise<void>;
 }

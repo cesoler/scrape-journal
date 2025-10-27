@@ -39,7 +39,7 @@ docker build --no-cache \
 Run the container from the production image:
 
 ```bash
-docker run -it --rm \
+docker run -d -it --rm \
   --name challenge-api-prod \
   -p 3000:3000 \
   $IMAGE_NAME_PROD

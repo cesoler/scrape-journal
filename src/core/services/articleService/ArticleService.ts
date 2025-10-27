@@ -11,7 +11,6 @@ class ArticleService implements IArticleService {
 
     async scrapeArticleList(browser: Browser, url: string, selectors: JournalSelector['mainPage']): Promise<MainArticleContentDTO[]> {
         const page = await this.pageService.setupPage(browser, url, selectors.contentColumnSelector);
-        page.on('console', msg => console.log('PAGE LOG:', msg.text()));
         const articles = await this.extractArticlesFromPage(page, selectors);
         await this.pageService.closePage(page);
         return articles;
@@ -19,15 +18,7 @@ class ArticleService implements IArticleService {
 
     async scrapeArticleDetails(browser: Browser, url: string, selectors: JournalSelector['articlePage']): Promise<DetailArticleContentDTO> {
         const page = await this.pageService.setupPage(browser, url, selectors.subtitleSelector);
-        const articleDetails = await page.evaluate((selector) => {
-            const subtitle = document.querySelector(selector.subtitleSelector)?.textContent || 'No Subtitle';
-            const createdAt = document.querySelector(selector.createdAtSelector)?.textContent || 'No Creation Date';
-
-            return {
-                subtitle,
-                createdAt
-            };
-        }, selectors);
+        const articleDetails = await this.extractArticleDetails(page, selectors);
         await this.pageService.closePage(page);
         return articleDetails;
     }
@@ -64,20 +55,31 @@ class ArticleService implements IArticleService {
         urlExtractor: (item: T) => string | null
     ): Promise<({ item: T; details: DetailArticleContentDTO | null })[]> {
         const results: ({ item: T; details: DetailArticleContentDTO | null })[] = [];
+        console.log('Starting synchronous scraping of article details...');
+        
+        const detailsPage = await this.pageService.setupPage(browser, 'about:blank');
 
-        for (const item of baseList) {
-            const url = urlExtractor(item);
-            if (!url) {
-                results.push({ item, details: null });
-                continue;
-            }
+        try {
+            for (const item of baseList) {
+                console.log('Processing item:', item);
+                const url = urlExtractor(item);
+                if (!url) {
+                    results.push({ item, details: null });
+                    continue;
+                }
 
-            try {
-                const details = await this.scrapeArticleDetails(browser, url, selectors);
-                results.push({ item, details });
-            } catch (err) {
-                results.push({ item, details: null });
+                try {
+                    await this.pageService.pageGoto(detailsPage, url, 15000, selectors.subtitleSelector);
+                    const articleDetails = await this.extractArticleDetails(detailsPage, selectors);
+                    results.push({ item, details: articleDetails });
+                    console.log('Processed item successfully:', item);
+                } catch (err) {
+                    results.push({ item, details: null });
+                    console.error('Error processing item:', item, err);
+                }
             }
+        } finally {
+            await this.pageService.closePage(detailsPage);
         }
 
         return results;
@@ -95,6 +97,7 @@ class ArticleService implements IArticleService {
     }
 
     private async extractArticlesFromPage(page: Page, selectors: JournalSelector['mainPage']): Promise<MainArticleContentDTO[]> {
+        console.log('Extracting articles from main page...');
         return page.evaluate((selector) => {
             const getMainArticleContent = (node: Element, sel: JournalSelector['mainPage']) => {
                 const linkElement = node.querySelector<HTMLAnchorElement>(sel.postLinkSelector)?.href || null;
@@ -125,5 +128,15 @@ class ArticleService implements IArticleService {
             return mainArticlesContents;
         }, selectors);
     }
+
+    private async extractArticleDetails(page: Page, selectors: JournalSelector['articlePage']): Promise<DetailArticleContentDTO> {
+        const articleDetails = await page.evaluate((selector) => {
+            const subtitle = document.querySelector(selector.subtitleSelector)?.textContent || 'No Subtitle';
+            const createdAt = document.querySelector(selector.createdAtSelector)?.textContent || 'No Creation Date';
+            return { subtitle, createdAt };
+        }, selectors);
+        return articleDetails;
+    }
 }
+
 export const articleService = new ArticleService(pageService);
