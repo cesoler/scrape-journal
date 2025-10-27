@@ -36,7 +36,7 @@ This endpoint scrapes the list of articles directly from the public-facing `glob
 | Parameter | Type | Description | Required | Default |
 | :--- | :--- | :--- | :--- | :--- |
 | `category` | string | Specifies the news column to scrape. Valid options: `jornalismo`, `esportes`, `entretenimento`. | **Yes** | |
-| `sync` | string | Defines the scraping strategy. Valid options: `sync`, `async`. | No | `sync` |
+| `sync` | string | Defines the scraping strategy. Valid options: `sync`, `async`. | **Yes** | `sync` |
 
 **Example Request:**
 `GET /api/journal/scrape?category=jornalismo&sync=async`
