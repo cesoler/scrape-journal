@@ -49,3 +49,10 @@ export const VALID_CATEGORIES: AvailableColumnCategory[] = [
 export function isAvailableColumnCategory(value: string): value is AvailableColumnCategory {
   return VALID_CATEGORIES.includes(value as AvailableColumnCategory);
 }
+
+export interface ArticleAuthorDTO {
+    name: string;
+    url: string | null;
+}
+
+export type ArticleOrigin = 'main-page' | 'ai-suggestion';
