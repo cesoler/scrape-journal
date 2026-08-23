@@ -126,14 +126,40 @@ class ArticleService implements IArticleService {
         }, selectors);
     }
 
-    private async extractArticleDetails(page: Page, selectors: JournalSelector['articlePage']): Promise<DetailArticleContentDTO> {
-        const articleDetails = await page.evaluate((selector) => {
-            console.log('Chegou na extração de detalhes do artigo');
-            const subtitle = document.querySelector(selector.subtitleSelector)?.textContent || 'No Subtitle';
-            const createdAt = document.querySelector(selector.createdAtSelector)?.textContent || 'No Creation Date';
-            return { subtitle, createdAt };
+    public async extractArticleDetails(page: Page, selectors: JournalSelector['articlePage']): Promise<DetailArticleContentDTO> {
+        return page.evaluate((selector) => {
+            const attributeOf = (query: string, attribute: string): string | null => {
+                const value = document.querySelector(query)?.getAttribute(attribute);
+                return value?.trim() || null;
+            };
+
+            const subtitle = document.querySelector(selector.subtitleSelector)?.textContent
+                || 'No Subtitle';
+            const createdAt = document.querySelector(selector.createdAtSelector)?.textContent
+                || 'No Creation Date';
+
+            const sections = Array.from(document.querySelectorAll(selector.sectionSelector))
+                .map(node => node.getAttribute('content')?.trim() || '')
+                .filter(section => section.length > 0);
+
+            const authors = Array.from(document.querySelectorAll(selector.authorSelector))
+                .map(node => ({
+                    name: node.querySelector('[itemprop="name"]')?.getAttribute('content')?.trim() || '',
+                    url: node.querySelector('[itemprop="url"]')?.getAttribute('content')?.trim() || null
+                }))
+                .filter(author => author.name.length > 0);
+
+            return {
+                subtitle,
+                createdAt,
+                canonicalUrl: attributeOf(selector.canonicalSelector, 'href'),
+                publishedAt: attributeOf(selector.publishedAtSelector, 'content'),
+                modifiedAt: attributeOf(selector.modifiedAtSelector, 'content'),
+                imageUrl: attributeOf(selector.imageSelector, 'content'),
+                sections,
+                authors
+            };
         }, selectors);
-        return articleDetails;
     }
 }
 

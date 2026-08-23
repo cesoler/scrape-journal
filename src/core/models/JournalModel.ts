@@ -16,6 +16,12 @@ export interface MainArticleContentDTO {
 export interface DetailArticleContentDTO {
     subtitle: string;
     createdAt: string;
+    canonicalUrl: string | null;
+    publishedAt: string | null;
+    modifiedAt: string | null;
+    imageUrl: string | null;
+    sections: string[];
+    authors: ArticleAuthorDTO[];
 }
 
 export interface AiArticleSuggestionDTO {
