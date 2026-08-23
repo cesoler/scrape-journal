@@ -195,6 +195,23 @@ docker compose --profile dev up api-dev
 `shm_size: 1gb` is set on both API services because Chromium crashes with Docker's
 default 64MB `/dev/shm`.
 
+### Configuration
+
+Compose reads `.env` from the project directory to **interpolate** `${...}` inside
+`docker-compose.yml`. It does not inject that file into the containers — only the keys
+listed under `environment:` reach them.
+
+That means `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are the values worth
+editing: they configure the database *and* are what the API's `DATABASE_URL` is built
+from, so a password change in one place applies to both.
+
+The `DATABASE_URL` and `PORT` entries in `.env` are there for running the API on the host
+(`npm run start:dev`), where the database is reachable at `localhost`. Under compose the
+API talks to the `db` service instead, so those two entries are ignored.
+
+Note that the shell environment takes precedence over `.env` during interpolation: an
+exported `POSTGRES_PASSWORD` overrides the file.
+
 ---
 
 ## Tests
