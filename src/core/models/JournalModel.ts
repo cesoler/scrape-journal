@@ -1,10 +1,16 @@
 export interface CompleteArticleDTO {
     id: number;
     title: string;
-    url: string | null;
+    url: string;
     featured: boolean;
     subtitle: string;
     createdAt: string;
+    canonicalUrl: string;
+    imageUrl: string | null;
+    sections: string[];
+    authors: ArticleAuthorDTO[];
+    publishedAt: string | null;
+    modifiedAt: string | null;
 }
 
 export interface MainArticleContentDTO {

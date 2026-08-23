@@ -1,6 +1,6 @@
 import { Browser } from "puppeteer";
 import { JournalSelector } from "../../constants/Selectors";
-import { DetailArticleContentDTO, MainArticleContentDTO } from "../../models/JournalModel";
+import { AiArticleSuggestionDTO, AvailableColumnCategory, DetailArticleContentDTO, MainArticleContentDTO } from "../../models/JournalModel";
 
 export interface IArticleService {
     scrapeArticleList(browser: Browser, url: string, selectors: JournalSelector['mainPage']): Promise<MainArticleContentDTO[]>;
@@ -18,4 +18,6 @@ export interface IArticleService {
         selectors: JournalSelector['articlePage'],
         urlExtractor: (item: T) => string | null
     ): Promise<({ item: T; details: DetailArticleContentDTO | null })[]>;
+
+    getAISuggestions(column: AvailableColumnCategory, itemsPerPage: number): Promise<AiArticleSuggestionDTO[]>;
 }
