@@ -160,3 +160,33 @@ test('merges the category even when the article itself is not refreshed', { skip
     assert.deepEqual(saved.categories, ['esporte', 'jornalismo']);
 });
 
+
+test('marks when the article was first and last seen', { skip: shouldSkip }, async () => {
+    const [saved] = await articleRepository.saveMany([buildInput()]);
+
+    assert.ok(saved.firstSeenAt instanceof Date);
+    assert.equal(saved.firstSeenAt.getTime(), saved.lastSeenAt.getTime());
+});
+
+test('moves last_seen_at even when the article is not overwritten', { skip: shouldSkip }, async () => {
+    const [first] = await articleRepository.saveMany([buildInput()]);
+    await new Promise(resolve => setTimeout(resolve, 20));
+
+    const [second] = await articleRepository.saveMany([
+        buildInput({ title: 'Stale title', modifiedAt: new Date('2026-08-23T04:00:00.000Z') })
+    ]);
+
+    assert.equal(second.title, 'Original title');
+    assert.ok(second.lastSeenAt.getTime() > first.lastSeenAt.getTime());
+});
+
+test('keeps first_seen_at from the run that discovered the article', { skip: shouldSkip }, async () => {
+    const [first] = await articleRepository.saveMany([buildInput()]);
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const [second] = await articleRepository.saveMany([
+        buildInput({ title: 'Updated title', modifiedAt: new Date('2026-08-24T10:00:00.000Z') })
+    ]);
+
+    assert.equal(second.title, 'Updated title');
+    assert.equal(second.firstSeenAt.getTime(), first.firstSeenAt.getTime());
+});
