@@ -159,6 +159,7 @@ class JournalService implements IJournalService {
                 canonicalUrl,
                 sourceUrl,
                 title: titleExtractor(item),
+                articleTitle: details.articleTitle,
                 subtitle: details.subtitle,
                 featured: featuredExtractor(item),
                 imageUrl: details.imageUrl,

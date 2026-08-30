@@ -1,6 +1,8 @@
 export interface CompleteArticleDTO {
     id: number;
     title: string;
+    articleTitle: string | null;
+    categories: string[];
     url: string;
     featured: boolean;
     subtitle: string;
@@ -20,6 +22,7 @@ export interface MainArticleContentDTO {
 }
 
 export interface DetailArticleContentDTO {
+    articleTitle: string | null;
     subtitle: string;
     createdAt: string;
     canonicalUrl: string | null;

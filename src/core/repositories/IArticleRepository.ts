@@ -5,6 +5,7 @@ export interface ArticleUpsertInput {
     canonicalUrl: string;
     sourceUrl: string;
     title: string;
+    articleTitle: string | null;
     subtitle: string | null;
     featured: boolean;
     imageUrl: string | null;
