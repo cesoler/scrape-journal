@@ -20,23 +20,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # The production image is the single place where Chrome's shared libraries
+      # are declared, and it ships Chrome itself in a layer instead of having
+      # Puppeteer download it on every run.
+      - name: Build the scraper image
+        uses: docker/build-push-action@v6
         with:
-          node-version: 20
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      # Puppeteer ships Chrome but not the shared libraries it links against.
-      - name: Install the Chrome shared libraries
-        run: sudo apt-get update && sudo apt-get install -y libnss3 libnspr4 libasound2t64
-
-      - name: Build
-        run: npm run build
+          context: .
+          file: Docker/Dockerfile
+          tags: scrape-journal:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Scrape every column into the database
-        run: npm run scrape
+        run: |
+          docker run --rm \
+            --shm-size=1g \
+            -e DATABASE_URL \
+            -e DATABASE_SSL=true \
+            scrape-journal:ci npm run scrape
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DATABASE_SSL: 'true'
