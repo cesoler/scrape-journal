@@ -6,6 +6,8 @@ export function toCompleteArticleDTO(article: Article): CompleteArticleDTO {
     return {
         id: article.id,
         title: article.title,
+        articleTitle: article.articleTitle,
+        categories: article.categories,
         url: article.sourceUrl,
         featured: article.featured,
         subtitle: article.subtitle ?? 'No Subtitle',

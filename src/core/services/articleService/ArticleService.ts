@@ -133,14 +133,25 @@ class ArticleService implements IArticleService {
                 return value?.trim() || null;
             };
 
+            // g1 and ge expose the timestamp as <meta content="...">, while oglobo and
+            // the magazines use <time datetime="...">. Same itemprop, different attribute.
+            const timestampOf = (query: string): string | null =>
+                attributeOf(query, 'content') || attributeOf(query, 'datetime');
+
             const subtitle = document.querySelector(selector.subtitleSelector)?.textContent
                 || 'No Subtitle';
             const createdAt = document.querySelector(selector.createdAtSelector)?.textContent
                 || 'No Creation Date';
 
+            // A single article:section can pack the whole trail into one value
+            // ("Política;Eleições 2026"), so every meta is split before being listed.
             const sections = Array.from(document.querySelectorAll(selector.sectionSelector))
-                .map(node => node.getAttribute('content')?.trim() || '')
+                .flatMap(node => (node.getAttribute('content') || '').split(';'))
+                .map(section => section.trim())
                 .filter(section => section.length > 0);
+
+            const articleTitle = document.querySelector(selector.articleTitleSelector)?.textContent?.trim()
+                || attributeOf(selector.articleTitleFallbackSelector, 'content');
 
             const authors = Array.from(document.querySelectorAll(selector.authorSelector))
                 .map(node => ({
@@ -150,11 +161,12 @@ class ArticleService implements IArticleService {
                 .filter(author => author.name.length > 0);
 
             return {
+                articleTitle: articleTitle || null,
                 subtitle,
                 createdAt,
                 canonicalUrl: attributeOf(selector.canonicalSelector, 'href'),
-                publishedAt: attributeOf(selector.publishedAtSelector, 'content'),
-                modifiedAt: attributeOf(selector.modifiedAtSelector, 'content'),
+                publishedAt: timestampOf(selector.publishedAtSelector),
+                modifiedAt: timestampOf(selector.modifiedAtSelector),
                 imageUrl: attributeOf(selector.imageSelector, 'content'),
                 sections,
                 authors

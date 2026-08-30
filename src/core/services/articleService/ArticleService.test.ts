@@ -90,3 +90,47 @@ test('returns nulls and empty lists when the metadata is missing', async () => {
     assert.deepEqual(details.authors, []);
     assert.equal(details.subtitle, 'Só o subtítulo');
 });
+
+test('reads the timestamps from a <time itemprop> when there is no <meta>', async () => {
+    const page = await pageFor('oglobo-article.html');
+    const details = await articleService.extractArticleDetails(page, selectors);
+    await page.close();
+
+    assert.equal(details.publishedAt, '2026-08-30T03:30:25.473-03:00');
+    assert.equal(details.modifiedAt, '2026-08-30T03:30:26.314-03:00');
+});
+
+test('splits an article:section that packs several sections into one meta', async () => {
+    const page = await pageFor('oglobo-article.html');
+    const details = await articleService.extractArticleDetails(page, selectors);
+    await page.close();
+
+    assert.deepEqual(details.sections, ['Política', 'Eleições 2026']);
+});
+
+test('extracts the headline of the article page itself', async () => {
+    const page = await pageFor('oglobo-article.html');
+    const details = await articleService.extractArticleDetails(page, selectors);
+    await page.close();
+
+    assert.equal(
+        details.articleTitle,
+        'Uma década do impeachment: como estão hoje os pivôs da saída de Dilma'
+    );
+});
+
+test('falls back to og:title when the page has no <h1>', async () => {
+    const page = await pageFor('oglobo-article-og-title-only.html');
+    const details = await articleService.extractArticleDetails(page, selectors);
+    await page.close();
+
+    assert.equal(details.articleTitle, 'Título vindo do og:title');
+});
+
+test('leaves the article headline null when the page carries neither', async () => {
+    const page = await pageFor('g1-article-no-canonical.html');
+    const details = await articleService.extractArticleDetails(page, selectors);
+    await page.close();
+
+    assert.equal(details.articleTitle, null);
+});

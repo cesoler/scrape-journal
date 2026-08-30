@@ -16,6 +16,11 @@ export class Article {
     @Column({ type: 'text' })
     title!: string;
 
+    // The headline of the article page itself; `title` is the home page teaser,
+    // which the newsroom often rewrites for the front page.
+    @Column({ name: 'article_title', type: 'text', nullable: true })
+    articleTitle!: string | null;
+
     @Column({ type: 'text', nullable: true })
     subtitle!: string | null;
 
@@ -37,9 +42,11 @@ export class Article {
     @Column({ name: 'modified_at', type: 'timestamptz', nullable: true })
     modifiedAt!: Date | null;
 
-    @Index('idx_articles_category')
-    @Column({ type: 'text' })
-    category!: AvailableColumnCategory;
+    // One row per article: an article listed under more than one column keeps
+    // every category instead of having the last scrape overwrite the previous one.
+    @Index('idx_articles_categories')
+    @Column({ type: 'text', array: true, default: () => "'{}'" })
+    categories!: AvailableColumnCategory[];
 
     @Column({ type: 'text' })
     origin!: ArticleOrigin;

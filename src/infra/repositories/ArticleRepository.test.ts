@@ -5,13 +5,23 @@ import { Article } from '../../core/entities/Article';
 import { ArticleUpsertInput } from '../../core/repositories/IArticleRepository';
 import { articleRepository } from './ArticleRepository';
 
-const shouldSkip = !process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL ?? '';
+
+// This suite truncates "articles" between tests, so it refuses to run anywhere
+// but a local database: pointing DATABASE_URL at a managed host wipes real rows.
+const isLocalDatabase = /@(localhost|127\.0\.0\.1|db)[:/]/.test(databaseUrl);
+const shouldSkip = !databaseUrl || !isLocalDatabase;
+
+if (databaseUrl && !isLocalDatabase) {
+    console.warn('[ArticleRepository.test] Skipping: DATABASE_URL does not point at a local database.');
+}
 
 function buildInput(overrides: Partial<ArticleUpsertInput> = {}): ArticleUpsertInput {
     return {
         canonicalUrl: 'https://g1.globo.com/materia.ghtml',
         sourceUrl: 'https://g1.globo.com/materia.ghtml#tracking',
         title: 'Original title',
+        articleTitle: 'Original article headline',
         subtitle: 'Original subtitle',
         featured: false,
         imageUrl: null,
@@ -44,6 +54,8 @@ test('saves a new article', { skip: shouldSkip }, async () => {
     const [saved] = await articleRepository.saveMany([buildInput()]);
     assert.ok(saved.id > 0);
     assert.equal(saved.canonicalUrl, 'https://g1.globo.com/materia.ghtml');
+    assert.equal(saved.articleTitle, 'Original article headline');
+    assert.deepEqual(saved.categories, ['jornalismo']);
     assert.deepEqual(saved.sections, ['G1', 'SP']);
     assert.deepEqual(saved.authors, [{ name: 'Fulano', url: null }]);
 });
@@ -118,3 +130,33 @@ test('returns the articles in the order they were passed in', { skip: shouldSkip
 test('returns an empty array for an empty batch', { skip: shouldSkip }, async () => {
     assert.deepEqual(await articleRepository.saveMany([]), []);
 });
+
+test('keeps every category the article was listed under', { skip: shouldSkip }, async () => {
+    await articleRepository.saveMany([buildInput({ category: 'jornalismo' })]);
+    const [saved] = await articleRepository.saveMany([buildInput({ category: 'esporte' })]);
+
+    assert.deepEqual(saved.categories, ['esporte', 'jornalismo']);
+    assert.equal(await AppDataSource.getRepository(Article).count(), 1);
+});
+
+test('does not repeat a category the article already carries', { skip: shouldSkip }, async () => {
+    await articleRepository.saveMany([buildInput()]);
+    const [saved] = await articleRepository.saveMany([buildInput()]);
+
+    assert.deepEqual(saved.categories, ['jornalismo']);
+});
+
+test('merges the category even when the article itself is not refreshed', { skip: shouldSkip }, async () => {
+    await articleRepository.saveMany([buildInput({ category: 'jornalismo' })]);
+    const [saved] = await articleRepository.saveMany([
+        buildInput({
+            category: 'esporte',
+            title: 'Stale title',
+            modifiedAt: new Date('2026-08-23T04:00:00.000Z')
+        })
+    ]);
+
+    assert.equal(saved.title, 'Original title');
+    assert.deepEqual(saved.categories, ['esporte', 'jornalismo']);
+});
+
