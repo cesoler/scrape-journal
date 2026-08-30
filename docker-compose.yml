@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-scrape}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scrape}
+      POSTGRES_DB: ${POSTGRES_DB:-scrape_journal}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scrape} -d ${POSTGRES_DB:-scrape_journal}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-scrape}:${POSTGRES_PASSWORD:-scrape}@db:5432/${POSTGRES_DB:-scrape_journal}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    # Chromium crashes with Docker's default 64MB /dev/shm.
+    shm_size: 1gb
+
+  api-dev:
+    profiles: ["dev"]
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile-dev
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-scrape}:${POSTGRES_PASSWORD:-scrape}@db:5432/${POSTGRES_DB:-scrape_journal}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    shm_size: 1gb
+    volumes:
+      - ./src:/app/src
+      - ./tsconfig.json:/app/tsconfig.json
+
+volumes:
+  pgdata:

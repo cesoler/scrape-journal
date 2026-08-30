@@ -13,6 +13,12 @@ export interface JournalSelector {
   articlePage: {
     subtitleSelector: string;
     createdAtSelector: string;
+    canonicalSelector: string;
+    publishedAtSelector: string;
+    modifiedAtSelector: string;
+    imageSelector: string;
+    sectionSelector: string;
+    authorSelector: string;
   };
 };
 
@@ -29,7 +35,14 @@ export const getSelectorsForBrowser = (category: AvailableColumnCategory): Journ
     },
     articlePage: {
       subtitleSelector: '.content-head__subtitle',
-      createdAtSelector: '.content-publication-data__updated'
+      createdAtSelector: '.content-publication-data__updated',
+      canonicalSelector: 'link[rel="canonical"]',
+      publishedAtSelector: 'meta[itemprop="datePublished"]',
+      modifiedAtSelector: 'meta[itemprop="dateModified"]',
+      imageSelector: 'meta[property="og:image"]',
+      sectionSelector: 'meta[property="article:section"]',
+      // Restricted to Person: g1 repeats the same name as an Organization.
+      authorSelector: '[itemprop="author"][itemtype="https://schema.org/Person"]'
     }
   };
 };

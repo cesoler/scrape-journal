@@ -40,3 +40,12 @@ export function parseJsonToAiArticleSuggestionDTO(jsonString: any): AiArticleSug
         type: jsonString.type
     };
 }
+
+export function parseIsoDate(rawDate: string | null): Date | null {
+    if (!rawDate) {
+        return null;
+    }
+
+    const parsed = new Date(rawDate);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}

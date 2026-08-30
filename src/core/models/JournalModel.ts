@@ -1,10 +1,16 @@
 export interface CompleteArticleDTO {
     id: number;
     title: string;
-    url: string | null;
+    url: string;
     featured: boolean;
     subtitle: string;
     createdAt: string;
+    canonicalUrl: string;
+    imageUrl: string | null;
+    sections: string[];
+    authors: ArticleAuthorDTO[];
+    publishedAt: string | null;
+    modifiedAt: string | null;
 }
 
 export interface MainArticleContentDTO {
@@ -16,6 +22,12 @@ export interface MainArticleContentDTO {
 export interface DetailArticleContentDTO {
     subtitle: string;
     createdAt: string;
+    canonicalUrl: string | null;
+    publishedAt: string | null;
+    modifiedAt: string | null;
+    imageUrl: string | null;
+    sections: string[];
+    authors: ArticleAuthorDTO[];
 }
 
 export interface AiArticleSuggestionDTO {
@@ -49,3 +61,10 @@ export const VALID_CATEGORIES: AvailableColumnCategory[] = [
 export function isAvailableColumnCategory(value: string): value is AvailableColumnCategory {
   return VALID_CATEGORIES.includes(value as AvailableColumnCategory);
 }
+
+export interface ArticleAuthorDTO {
+    name: string;
+    url: string | null;
+}
+
+export type ArticleOrigin = 'main-page' | 'ai-suggestion';

@@ -10,7 +10,8 @@ A core feature of this project is its two-pronged approach to data fetching, all
 * **Framework:** Express.js
 * **Language:** TypeScript
 * **Web Scraping:** Puppeteer
-* **Containerization:** Docker (with multi-stage builds)
+* **Database:** PostgreSQL 16 with TypeORM
+* **Containerization:** Docker (with multi-stage builds), docker-compose
 
 ---
 
@@ -71,27 +72,40 @@ To prevent OOM errors, this endpoint has a built-in safeguard: **if `itemsPerPag
 
 Returns an array of `CompleteArticleDTO` objects.
 
+`id` is the PostgreSQL row id, **not** an index within the response. Requesting the
+same article again returns the same `id`.
+
 **Body Example:**
 ```json
 [
   {
-    "id": 1,
+    "id": 42,
     "title": "Article Title Scraped from Detail Page",
-    "url": "https://g1.globo.com/...",
+    "url": "https://g1.globo.com/...ghtml#HOME-AREA-COLUNA-JORNALISMO-user",
     "featured": true,
     "subtitle": "The article's subtitle text.",
-    "createdAt": "2025-10-26"
-  },
-  {
-    "id": 2,
-    "title": "Another Article Title",
-    "url": "https://g1.globo.com/...",
-    "featured": false,
-    "subtitle": "Another subtitle.",
-    "createdAt": "2025-10-25"
+    "createdAt": "2026-08-23",
+    "canonicalUrl": "https://g1.globo.com/...ghtml",
+    "imageUrl": "https://s2-g1.glbimg.com/.../img.jpg",
+    "sections": ["G1", "SP", "Campinas e Região"],
+    "authors": [
+      { "name": "Gabriel Pitor", "url": "https://g1.globo.com/autores/gabriel-pitor" }
+    ],
+    "publishedAt": "2026-08-23T06:00:18.243Z",
+    "modifiedAt": "2026-08-23T13:02:44.074Z"
   }
 ]
 ```
+
+| Field | Notes |
+| :--- | :--- |
+| `id` | PostgreSQL row id, stable across requests |
+| `url` | The url the article was found at, tracking fragment included |
+| `canonicalUrl` | Normalized url, used as the dedup key |
+| `createdAt` | Publication day, `YYYY-MM-DD` |
+| `publishedAt` / `modifiedAt` | Full ISO timestamps read from the article's `<head>` |
+| `sections` | Editorial path, e.g. `["G1", "SP", "Campinas e Região"]` |
+| `authors` | One entry per credited author; `url` may be `null` |
 
 ### 400 Bad Request (Invalid Input)
 
@@ -120,6 +134,99 @@ Returned if an unexpected error occurs during the browser automation (e.g., Pupp
 {
   "error": "An internal error occurred: Error: Navigation timeout of 35000 ms exceeded"
 }
+```
+
+---
+
+## Persistence and Deduplication
+
+Every scrape writes to the `articles` table. Re-running the same scrape does **not**
+create new rows.
+
+**Dedup key:** `canonical_url`, a `UNIQUE` column. It is built by taking the article's
+`<link rel="canonical">` (falling back to the url the article was found at) and then:
+
+1. forcing the `https` scheme
+2. lowercasing the host
+3. dropping the fragment
+4. dropping the query string
+5. dropping the trailing slash
+
+Steps 3 and 4 are what make the two scraping origins agree. The AI suggestions API
+returns every url with a tracking fragment appended
+(`...ghtml#HOME-AREA-COLUNA-JORNALISMO-user,rec-principal,<uuid>`) while the home page
+returns the same article without it — without normalization the same article would be
+stored twice.
+
+**Write strategy:** a single batched
+`INSERT ... ON CONFLICT (canonical_url) DO UPDATE` per request, guarded so a stored
+article is only overwritten when the incoming one is newer:
+
+```sql
+WHERE articles.modified_at IS NULL
+   OR EXCLUDED.modified_at IS NULL
+   OR EXCLUDED.modified_at > articles.modified_at
+```
+
+`featured`, `category` and `origin` describe how the article was reached, not the
+article itself, so they are overwritten by the most recent scrape.
+
+The migration runs automatically when the server boots. A failure to reach the database
+kills the process instead of leaving the API up returning 500s.
+
+---
+
+## Running with docker-compose
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+This starts PostgreSQL 16 and the API, waiting for the database healthcheck before the
+API boots. The API is on `http://localhost:3000` and Postgres on `localhost:5432`.
+
+For hot reload, use the `dev` profile — it mounts `./src` into the container:
+
+```bash
+docker compose --profile dev up api-dev
+```
+
+`shm_size: 1gb` is set on both API services because Chromium crashes with Docker's
+default 64MB `/dev/shm`.
+
+### Configuration
+
+Compose reads `.env` from the project directory to **interpolate** `${...}` inside
+`docker-compose.yml`. It does not inject that file into the containers — only the keys
+listed under `environment:` reach them.
+
+That means `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB` are the values worth
+editing: they configure the database *and* are what the API's `DATABASE_URL` is built
+from, so a password change in one place applies to both.
+
+The `DATABASE_URL` and `PORT` entries in `.env` are there for running the API on the host
+(`npm run start:dev`), where the database is reachable at `localhost`. Under compose the
+API talks to the `db` service instead, so those two entries are ignored.
+
+Note that the shell environment takes precedence over `.env` during interpolation: an
+exported `POSTGRES_PASSWORD` overrides the file.
+
+---
+
+## Tests
+
+```bash
+npm test
+```
+
+Unit tests for the url normalizer and for the article `<head>` extraction (the latter
+drives a real headless Chromium against HTML fixtures) run with no setup. The repository
+integration tests need a database and skip themselves when `DATABASE_URL` is absent:
+
+```bash
+docker compose up -d db
+DATABASE_URL=postgres://scrape:scrape@localhost:5432/scrape_journal npm test
 ```
 
 # Docker Container Guide (Node.js, Puppeteer)
