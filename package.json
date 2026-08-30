@@ -6,6 +6,8 @@
     "start:dev": "ts-node-dev --respawn --transpile-only --ignore-watch node_modules src/application/server.ts",
     "build": "tsc",
     "start": "node dist/application/server.js",
+    "scrape": "node dist/application/scrape.js",
+    "scrape:dev": "ts-node --transpile-only src/application/scrape.ts",
     "test": "node --require ts-node/register --test $(find src -name '*.test.ts' | sort)"
   },
   "keywords": [],
