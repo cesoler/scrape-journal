@@ -14,8 +14,7 @@ const OVERWRITTEN_COLUMNS = [
     'authors',
     'published_at',
     'modified_at',
-    'origin',
-    'scraped_at'
+    'origin'
 ];
 
 const FRESHNESS_GUARD =
@@ -38,7 +37,7 @@ class ArticleRepository implements IArticleRepository {
             deduped.set(input.canonicalUrl, input);
         }
         const rows = [...deduped.values()];
-        const scrapedAt = new Date();
+        const seenAt = new Date();
 
         // Built through the query builder on purpose: `Repository.upsert()` accepts
         // `overwriteCondition` in its type but drops it before reaching `orUpdate`,
@@ -52,14 +51,15 @@ class ArticleRepository implements IArticleRepository {
             .values(rows.map(({ category, ...row }) => ({
                 ...row,
                 categories: [category],
-                scrapedAt
+                firstSeenAt: seenAt,
+                lastSeenAt: seenAt
             })))
             .orUpdate(OVERWRITTEN_COLUMNS, ['canonical_url'], {
                 overwriteCondition: { where: FRESHNESS_GUARD }
             })
             .execute();
 
-        await this.mergeCategories(rows);
+        await this.markSeen(rows, seenAt);
 
         // The freshness guard makes Postgres skip some rows, and skipped rows are
         // absent from RETURNING. Reading them back is what keeps every requested
@@ -74,10 +74,10 @@ class ArticleRepository implements IArticleRepository {
             .filter((article): article is Article => article !== undefined);
     }
 
-    // `categories` stays out of the upsert's overwritten columns on purpose: an
-    // article listed under two columns must keep both, and the freshness guard
-    // would skip the row anyway whenever its content has not changed.
-    private async mergeCategories(rows: ArticleUpsertInput[]): Promise<void> {
+    // Both of these run outside the upsert on purpose. `categories` must keep
+    // every column an article was listed under, and `last_seen_at` has to move
+    // even when the freshness guard skips a row whose content did not change.
+    private async markSeen(rows: ArticleUpsertInput[], seenAt: Date): Promise<void> {
         const urlsByCategory = new Map<string, string[]>();
         for (const row of rows) {
             const urls = urlsByCategory.get(row.category) ?? [];
@@ -88,13 +88,13 @@ class ArticleRepository implements IArticleRepository {
         for (const [category, urls] of urlsByCategory) {
             await this.dataSource.query(
                 `UPDATE "articles"
-                 SET "categories" = (
-                     SELECT array_agg(DISTINCT category ORDER BY category)
-                     FROM unnest("categories" || $1::text[]) AS category
-                 )
-                 WHERE "canonical_url" = ANY($2::text[])
-                   AND NOT ("categories" @> $1::text[])`,
-                [[category], urls]
+                 SET "last_seen_at" = $3,
+                     "categories" = (
+                         SELECT array_agg(DISTINCT category ORDER BY category)
+                         FROM unnest("categories" || $1::text[]) AS category
+                     )
+                 WHERE "canonical_url" = ANY($2::text[])`,
+                [[category], urls, seenAt]
             );
         }
     }

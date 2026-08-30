@@ -1,0 +1,42 @@
+name: daily-scrape
+
+# 09:00 UTC is 06:00 in America/Sao_Paulo, after the newsroom has filled the
+# home page for the day. GitHub queues scheduled runs, so the exact minute drifts.
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+# Never let a slow run overlap the next day's.
+concurrency:
+  group: daily-scrape
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Puppeteer ships Chrome but not the shared libraries it links against.
+      - name: Install the Chrome shared libraries
+        run: sudo apt-get update && sudo apt-get install -y libnss3 libnspr4 libasound2t64
+
+      - name: Build
+        run: npm run build
+
+      - name: Scrape every column into the database
+        run: npm run scrape
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_SSL: 'true'

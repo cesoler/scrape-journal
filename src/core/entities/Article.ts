@@ -51,8 +51,14 @@ export class Article {
     @Column({ type: 'text' })
     origin!: ArticleOrigin;
 
-    @Column({ name: 'scraped_at', type: 'timestamptz' })
-    scrapedAt!: Date;
+    @Column({ name: 'first_seen_at', type: 'timestamptz' })
+    firstSeenAt!: Date;
+
+    // Bumped on every run that lists the article, even when nothing about it
+    // changed, so "what did the site carry today" stays answerable.
+    @Index('idx_articles_last_seen_at')
+    @Column({ name: 'last_seen_at', type: 'timestamptz' })
+    lastSeenAt!: Date;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
     createdAt!: Date;
