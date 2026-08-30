@@ -1,10 +1,10 @@
+// Must come first: DataSource is built at import time and reads DATABASE_URL,
+// so the .env file has to be loaded before that module is evaluated.
+import 'dotenv/config';
 import 'reflect-metadata';
 import express, { Express } from 'express';
-import dotenv from 'dotenv';
 import { defaultRouter } from './routes/default.routes';
 import { initializeDatabase } from '../infra/database/DataSource';
-
-dotenv.config();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
