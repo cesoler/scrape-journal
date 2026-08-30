@@ -77,9 +77,11 @@ async function main(): Promise<void> {
     console.log(`[scrape] finished: ${results.length - failed} ok, ${failed} failed`);
 
     await AppDataSource.destroy();
-    if (failed > 0) {
-        process.exitCode = 1;
-    }
+
+    // Explicit exit: Chrome can outlive `browser.close()` and keep holding the
+    // runner's stdout pipe, which left a scrape that had already finished in
+    // 2m30 hanging until the job's 30 minute timeout killed it.
+    process.exit(failed > 0 ? 1 : 0);
 }
 
 main().catch(async (error) => {
